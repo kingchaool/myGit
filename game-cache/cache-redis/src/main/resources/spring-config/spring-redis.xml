@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+            http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd  ">
+
+    <context:property-placeholder location="classpath:property-config/common.properties" />
+    <!--
+    <bean id="redisSentinelConfiguration" class="org.springframework.data.redis.connection.RedisSentinelConfiguration">
+        <constructor-arg name="master" value="mymaster" />
+        <constructor-arg name="sentinelHostAndPorts">
+            <set>
+                <value>192.168.88.153:26379</value>
+                <value>192.168.88.153:26380</value>
+                <value>192.168.88.153:26382</value>
+            </set>
+        </constructor-arg>
+    </bean>
+    -->
+
+    <dubbo:annotation  package="com.migu.cache.service"/>
+
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxTotal"  value="${redis.maxTotal}" />
+        <property name="maxIdle" value="${redis.maxIdle}" />
+        <property name="timeBetweenEvictionRunsMillis" value="${redis.timeBetweenEvictionRunsMillis}" />
+        <property name="minEvictableIdleTimeMillis" value="${redis.minEvictableIdleTimeMillis}" />
+        <property name="testOnBorrow" value="${redis.testOnBorrow}" />
+    </bean>
+    <bean id="jedisConnFactory"  class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+       <constructor-arg ref="poolConfig"/>
+        <!--
+        <constructor-arg ref="redisSentinelConfiguration" />
+        -->
+        <property name="hostName" value="${redis.host}"/>
+        <property name="port" value="${redis.port}"/>
+    </bean>
+
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate">
+        <property name="connectionFactory" ref="jedisConnFactory" />
+    </bean>
+    <!-- redis -->
+    <dubbo:application name="cacheService" />
+    <dubbo:registry  protocol="zookeeper" address="${dubbo.zookeeper.address}" />
+    <dubbo:protocol name="${dubbo.protocol.name}" port="${dubbo.protocol.port}" />
+    <dubbo:service interface="com.migu.cache.api.CacheService"  ref="redisCacheService" />
+
+</beans>
